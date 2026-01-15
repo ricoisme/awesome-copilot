@@ -37,14 +37,17 @@ jobs:
           # 排除 workflow 變更，恢復 fork 原本的 workflow
           git checkout main -- .github/workflows
 
-          # Commit 其他變更
-          if ! git diff --quiet; then
+          # 判斷有無其他改變
+          CHANGES=$(git diff --name-only)
+          echo "Changed files: $CHANGES"
+
+          if [ -n "$CHANGES" ]; then
             git commit -am "Merge upstream/main excluding workflows"
             git push origin temp-merge:main
           else
             echo "No changes to push"
           fi
 
-          # 回到 main 分支，刪掉暫存分支
+          # 刪掉暫存分支
           git checkout main
           git branch -D temp-merge
