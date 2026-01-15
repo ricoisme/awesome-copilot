@@ -25,15 +25,19 @@ jobs:
 
       - name: Merge upstream (exclude workflows)
         run: |
+          # 切到 main 分支
           git checkout main
-          # 先創建一個暫存分支，避免破壞 main
+
+          # 創建暫存分支
           git checkout -b temp-merge
+
+          # Merge upstream/main
           git merge upstream/main --allow-unrelated-histories
 
-          # 取消對 .github/workflows 的所有變更
-          git checkout HEAD main -- .github/workflows
+          # 排除 workflow 變更，恢復 fork 原本的 workflow
+          git checkout main -- .github/workflows
 
-          # 檢查是否有其他變更需要 commit
+          # Commit 其他變更
           if ! git diff --quiet; then
             git commit -am "Merge upstream/main excluding workflows"
             git push origin temp-merge:main
@@ -41,6 +45,6 @@ jobs:
             echo "No changes to push"
           fi
 
-          # 切回 main 分支
+          # 回到 main 分支，刪掉暫存分支
           git checkout main
           git branch -D temp-merge
