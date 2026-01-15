@@ -1,4 +1,4 @@
-name: Sync-Fork
+name: Sync Fork
 # 調度方式：每天早上 10 點
 on:
   schedule:
@@ -23,31 +23,27 @@ jobs:
       - name: Fetch upstream
         run: git fetch upstream
 
-      - name: Merge upstream (exclude workflows)
+      - name: Sync and Merge (exclude workflows)
         run: |
-          # 切到 main 分支
+          # 切換到 main 分支
           git checkout main
 
-          # 創建暫存分支
-          git checkout -b temp-merge
+          # 1. Merge upstream，但加上 --no-commit 讓變更停留在暫存區，不要直接提交
+          # 使用 || true 避免如果完全沒有更新時報錯停止
+          git merge upstream/main --no-commit --no-ff || true
 
-          # Merge upstream/main
-          git merge upstream/main --allow-unrelated-histories
+          # 2. 強制將 .github/workflows 還原成 HEAD (原本 fork 的狀態)
+          # 這一步會把 upstream 對 workflow 的任何修改從暫存區移除
+          git checkout HEAD -- .github/workflows
 
-          # 排除 workflow 變更，恢復 fork 原本的 workflow
-          git checkout main -- .github/workflows
-
-          # 判斷有無其他改變
-          CHANGES=$(git diff --name-only)
-          echo "Changed files: $CHANGES"
-
+          # 3. 檢查暫存區 (Staged) 是否有變更
+          # git diff --cached 是檢查「暫存區」與「HEAD」的差異
+          CHANGES=$(git diff --cached --name-only)
+          
           if [ -n "$CHANGES" ]; then
-            git commit -am "Merge upstream/main excluding workflows"
-            git push origin temp-merge:main
+            echo "Changes detected: $CHANGES"
+            git commit -m "Sync upstream/main (excluding workflows)"
+            git push origin main
           else
-            echo "No changes to push"
-          fi
-
-          # 刪掉暫存分支
-          git checkout main
-          git branch -D temp-merge
+            echo "No changes detected (or only workflow changes were ignored)."
+          fi       
