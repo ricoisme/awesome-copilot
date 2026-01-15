@@ -32,11 +32,17 @@ jobs:
           # 使用 || true 避免如果完全沒有更新時報錯停止
           git merge upstream/main --no-commit --no-ff || true
 
-          # 2. 強制將 .github/workflows 還原成 HEAD (原本 fork 的狀態)
-          # 這一步會把 upstream 對 workflow 的任何修改從暫存區移除
-          git checkout HEAD -- .github/workflows
+          # A. 將 .github/workflows 資料夾在「暫存區」的狀態強制重置為 HEAD
+          # 這會把 upstream 新增的檔案從 "要提交的名單" 中移除
+          git reset HEAD .github/workflows
+          
+          # B. 將工作目錄中的修改還原 (恢復原本的檔案內容)
+          git checkout -- .github/workflows
+          
+          # C. 清除未追蹤的檔案 (刪除 upstream 新增的 workflow 檔案，例如 traffic-reporting.yml)
+          git clean -fd .github/workflows
 
-          # 3. 檢查暫存區 (Staged) 是否有變更
+          # 2. 檢查暫存區 (Staged) 是否有變更
           # git diff --cached 是檢查「暫存區」與「HEAD」的差異
           CHANGES=$(git diff --cached --name-only)
           
