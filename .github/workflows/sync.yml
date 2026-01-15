@@ -17,10 +17,30 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-      - run: git remote add upstream https://github.com/github/awesome-copilot.git
-      - run: |
-          git fetch upstream
+      - name: Add upstream
+        run: git remote add upstream https://github.com/github/awesome-copilot.git
+
+      - name: Fetch upstream
+        run: git fetch upstream
+
+      - name: Merge upstream (exclude workflows)
+        run: |
           git checkout main
+          # 先創建一個暫存分支，避免破壞 main
+          git checkout -b temp-merge
           git merge upstream/main --allow-unrelated-histories
-          git checkout HEAD .github/workflows  # 恢復 workflow 目錄
-          git push origin main
+
+          # 取消對 .github/workflows 的所有變更
+          git checkout HEAD main -- .github/workflows
+
+          # 檢查是否有其他變更需要 commit
+          if ! git diff --quiet; then
+            git commit -am "Merge upstream/main excluding workflows"
+            git push origin temp-merge:main
+          else
+            echo "No changes to push"
+          fi
+
+          # 切回 main 分支
+          git checkout main
+          git branch -D temp-merge
