@@ -18,5 +18,9 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
       - run: git remote add upstream https://github.com/github/awesome-copilot.git
-      - run: git fetch upstream
-      - run: git checkout main && git merge upstream/main && git push origin main
+      - run: |
+          git fetch upstream
+          git checkout main
+          git merge upstream/main --allow-unrelated-histories
+          git checkout HEAD .github/workflows  # 恢復 workflow 目錄
+          git push origin main
